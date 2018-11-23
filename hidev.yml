@@ -1,0 +1,15 @@
+package:
+    type:       yii2-extension
+    name:       hiapi-r01
+    title:      hiAPI plugin for R01 registrar
+    headline:   hiAPI R01
+    keywords:   hiapi, hipanel, r01
+    description:    |
+        The plugin for integration [R01 registrar] API in hiAPI.
+
+        Provides:
+
+        - performing commands through [R01 SOAP API]
+
+        [R01 registrar]:    https://r01.ru/
+        [R01 SOAP API]:     https://help.r01.ru/partner/api.html
