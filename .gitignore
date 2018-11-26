@@ -36,3 +36,6 @@ php-cs-fixer.phar
 phpstan.phar
 phpunit-skelgen.phar
 phpunit.phar
+
+# Testing
+/tests/.env
