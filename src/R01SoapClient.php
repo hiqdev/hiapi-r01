@@ -2,51 +2,88 @@
 
 namespace hiapi\r01;
 
-use hiapi\r01\exceptions\LoginFailedException;
+use hiapi\r01\exceptions\FailedCommandException;
+use hiapi\r01\exceptions\FailedLoginException;
 use SoapClient;
+use SoapFault;
 
 class R01SoapClient implements ClientInterface
 {
     private $soapClient;
+
+    private $login;
+
+    private $password;
+
+    private $isConnected;
 
     /**
      * R01SoapClient constructor.
      * @param string $url
      * @param string $login
      * @param string $password
-     * @throws LoginFailedException
      */
     public function __construct(string $url, string $login, string $password)
     {
+        $this->login    = $login;
+        $this->password = $password;
+
         $this->soapClient = new SoapClient(null, [
             'location'   => $url,
             'uri'        => 'urn:RegbaseSoapInterface',
             'user_agent' => 'RegbaseSoapInterfaceClient',
-            'exceptions' => false,
+            'exceptions' => true,
             'trace'      => 1,
         ]);
-
-        $this->logIn($login, $password);
-
-        return $this->soapClient;
     }
 
     /**
-     * @param string $login
-     * @param string $password
-     * @throws LoginFailedException
+     * @param string $command
+     * @param array $data
+     * @return array
+     * @throws FailedCommandException
+     * @throws FailedLoginException
      */
-    private function logIn(string $login, string $password): void
+    public function request(string $command, array $data): array
     {
-        $result = $this->soapClient->logIn($login, $password);
+        $this->logIn();
 
-        if ($result->status->code !== 1) {
-            throw new LoginFailedException("logIn failed with reason: `$result->faultstring`");
+        try {
+            $result = $this->soapClient->__soapCall($command, $data);
+        } catch (SoapFault $fault) {
+            throw new FailedCommandException("Failed to perform command $command");
         }
+
+        return (array)$result;
     }
 
-    public function request(array $data): array
+    /**
+     * @throws FailedLoginException
+     */
+    private function logIn(): void
     {
-        // TODO: Implement request() method.
+        if ($this->isConnected) {
+            return;
+        }
+
+        try {
+            $result = $this->soapClient->logIn($this->login, $this->password);
+        } catch(SoapFault $fault) {
+            throw new FailedLoginException();
+        }
+
+        $this->isConnected = true;
+        $this->soapClient->__setCookie('SOAPClient', $result->status->message);
+    }
+
+    private function logOut()
+    {
+        $this->soapClient->logOut();
+        $this->isConnected = false;
+    }
+
+    public function __destruct()
+    {
+        $this->logOut();
     }
 }

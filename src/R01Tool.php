@@ -12,6 +12,7 @@ namespace hiapi\r01;
 
 use hiapi\r01\exceptions\InvalidCallException;
 use hiapi\r01\modules\AbstractModule;
+use hiapi\r01\modules\DomainModule;
 
 class R01Tool
 {
@@ -39,8 +40,6 @@ class R01Tool
 
     public function __call($command, $args): array
     {
-        $this->getClient();
-
         $moduleName = reset(preg_split('/(?=[A-Z])/', $command));
         $module = $this->getModule($moduleName);
 
@@ -51,7 +50,7 @@ class R01Tool
      * @param string $name
      * @return AbstractModule
      */
-    public function getModule(string $name): AbstractModule
+    private function getModule(string $name): AbstractModule
     {
         if (empty($this->modules[$name])) {
             throw new InvalidCallException("module `$name` not found");
@@ -68,14 +67,13 @@ class R01Tool
      * @param string $class
      * @return AbstractModule
      */
-    public function createModule(string $class): AbstractModule
+    private function createModule(string $class): AbstractModule
     {
         return new $class($this);
     }
 
     /**
      * @return ClientInterface
-     * @throws exceptions\LoginFailedException
      */
     protected function getClient(): ClientInterface
     {
@@ -88,5 +86,17 @@ class R01Tool
         }
 
         return $this->client;
+    }
+
+    /**
+     * @param string $command
+     * @param array $data
+     * @return array
+     */
+    public function request(string $command, array $data): array
+    {
+        $result = $this->getClient()->request($command, $data);
+
+        return $result;
     }
 }

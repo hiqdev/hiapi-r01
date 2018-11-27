@@ -2,15 +2,15 @@
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| logIn | |  |
-| logOut |  |  |
+| logIn  | ✓ |  |
+| logOut | ✓ |  |
 
 **Domain module**
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| domainCheck | |  |
-| domainsCheck |  |  |
+| domainCheck | ✓ |  |
+| domainsCheck | ✓ |  |
 | domainRegister |  |  |
 | domainUpdate |  |  |
 | domainSetNSs |  |  |

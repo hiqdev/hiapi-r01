@@ -15,5 +15,5 @@ namespace hiapi\r01;
  */
 interface ClientInterface
 {
-    public function request(array $data): array;
+    public function request(string $command, array $data): array;
 }

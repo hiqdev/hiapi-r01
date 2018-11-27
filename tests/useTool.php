@@ -1,7 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-echo __DIR__;
 require_once dirname(__DIR__, 4) . '/vendor/autoload.php';
 require_once dirname(__DIR__, 4) . '/vendor/yiisoft/yii2/Yii.php';
 
