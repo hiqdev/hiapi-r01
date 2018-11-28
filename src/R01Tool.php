@@ -12,6 +12,7 @@ namespace hiapi\r01;
 
 use hiapi\r01\exceptions\InvalidCallException;
 use hiapi\r01\modules\AbstractModule;
+use hiapi\r01\modules\ContactModule;
 use hiapi\r01\modules\DomainModule;
 
 class R01Tool
@@ -21,6 +22,8 @@ class R01Tool
     private $base;
 
     private $data;
+
+    private $defaultNss = ['ns1.topdns.me', 'ns2.topdns.me'];
 
     protected $modules = [
         'domain'    => DomainModule::class,
@@ -73,6 +76,14 @@ class R01Tool
     }
 
     /**
+     * @return array
+     */
+    public function getDefaultNss(): array
+    {
+        return $this->defaultNss;
+    }
+
+    /**
      * @return ClientInterface
      */
     protected function getClient(): ClientInterface
@@ -90,13 +101,29 @@ class R01Tool
 
     /**
      * @param string $command
-     * @param array $data
+     * @param array $input
+     * @param array $returns
      * @return array
      */
-    public function request(string $command, array $data): array
+    public function request(string $command, array $input, array $returns = null): array
     {
-        $result = $this->getClient()->request($command, $data);
+        $response = $this->getClient()->request($command, $input);
+
+        if (!$returns) {
+            return $response;
+        }
+
+        $result = [];
+        foreach ($returns as $apiName => $eppName) {
+            $result[$apiName] = $response[$eppName];
+        }
+        $result['status'] = $response['status'];
 
         return $result;
+    }
+
+    public function getBase()
+    {
+        return $this->base;
     }
 }

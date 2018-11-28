@@ -28,8 +28,8 @@
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| contactCreatePerson |  |  |
-| contactUpdatePerson |  |  |
+| contactCreatePerson | ✓ |  |
+| contactUpdatePerson | ✓ |  |
 | contactCreateOrg |  |  |
 | contactExists |  |  |
 | contactSet |  |  |
