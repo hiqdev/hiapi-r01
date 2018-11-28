@@ -11,7 +11,7 @@
 |---|:---:|---|
 | domainCheck | ✓ |  |
 | domainsCheck | ✓ |  |
-| domainRegister |  |  |
+| domainRegister | ✓ |  |
 | domainUpdate |  |  |
 | domainSetNSs |  |  |
 | domainRenew |  |  |
@@ -28,13 +28,13 @@
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| contactCreatePerson | ✓ |  |
-| contactUpdatePerson | ✓ |  |
+| contactCreatePerson |  |  |
+| contactUpdatePerson |  |  |
 | contactCreateOrg |  |  |
-| contactExists |  |  |
-| contactSet |  |  |
-| contactCreate |  |  |
-| contactUpdate |  |  |
+| contactExists | ✓ |  |
+| contactSet | ✓ |  |
+| contactCreate | ✓ |  |
+| contactUpdate | ✓ |  |
 | contactSave |  |  |
 
 

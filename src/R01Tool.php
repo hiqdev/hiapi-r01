@@ -105,7 +105,7 @@ class R01Tool
      * @param array $returns
      * @return array
      */
-    public function request(string $command, array $input, array $returns = null): array
+    public function request(string $command, array $input, array $returns = []): array
     {
         $response = $this->getClient()->request($command, $input);
 

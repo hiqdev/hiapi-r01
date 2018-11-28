@@ -9,6 +9,10 @@ class AbstractModule
     protected $tool;
     protected $base;
 
+    /**
+     * AbstractModule constructor.
+     * @param R01Tool $tool
+     */
     public function __construct(R01Tool $tool)
     {
         $this->tool = $tool;

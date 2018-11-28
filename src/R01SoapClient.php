@@ -54,7 +54,7 @@ class R01SoapClient implements ClientInterface
             throw new FailedCommandException("Failed to perform command $command");
         }
 
-        return (array)$result;
+        return json_decode(json_encode($result), true);
     }
 
     /**

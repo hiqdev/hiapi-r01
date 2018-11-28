@@ -34,6 +34,8 @@ class ContactModule extends AbstractModule
     {
         return $this->tool->request('checkDadminExists', [
             'nic_hdl'   => $this->nic_hdl($row['epp_id'], $row['type'] == 'org')
+        ], [
+            'exist' => 'exist',
         ]);
     }
 
@@ -62,7 +64,7 @@ class ContactModule extends AbstractModule
      */
     protected function handleContact(array $row, string $op): array
     {
-        return $this->tool->request($op . 'DadminPerson', array(
+        return $this->tool->request($op . 'DadminPerson', [
             'nic_hdl'       => $this->nic_hdl($row['epp_id']),
             'fiorus'        => $this->fiorus($row['name']),
             'fioeng'        => $this->fioeng($row['name']),
@@ -74,8 +76,8 @@ class ContactModule extends AbstractModule
             'e_mail'        => $row['email'],
             'isprotected'   => 0,
             'isresident'    => 0,
-        ), [
-            'id' => 'nic_hdl'
+        ], [
+            'epp_id' => 'nic_hdl'
         ]);
     }
 }
