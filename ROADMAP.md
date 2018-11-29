@@ -14,14 +14,14 @@
 | domainRegister | ✓ |  |
 | domainUpdate | ✓ |  |
 | domainSetNSs | ✓ |  |
-| domainRenew |  |  |
+| domainRenew | ✓ |  |
 | domainInfo | ✓ |  |
-| domainsGetInfo |  |  |
-| domainsLoadInfo |  |  |
-| domainSaveContacts |  |  |
-| domainSetPassword |  |  |
-| domainsEnableLock |  |  |
-| domainsDisableLock |  |  |
+| domainsGetInfo | ✓ |  |
+| domainsLoadInfo | ✓ |  |
+| domainSaveContacts | ✓ |  |
+| domainSetPassword | ✓ |  |
+| domainsEnableLock | ✓ |  |
+| domainsDisableLock | ✓ |  |
 
 
 **Contact Module**

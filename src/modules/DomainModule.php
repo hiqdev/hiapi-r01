@@ -10,9 +10,9 @@ class DomainModule extends AbstractModule
 {
     /**
      * @param string $domain
-     * @return mixed
+     * @return array
      */
-    private function domainCheck(string $domain)
+    private function domainCheck(string $domain): array
     {
         return $this->tool->request('checkDomainAvailable', [
             'domain_name' => $domain,
@@ -49,7 +49,7 @@ class DomainModule extends AbstractModule
         }
         $row = $this->domainPrepareContacts($row);
 
-        return $this->tool->request('addDomain', [
+        $result = $this->tool->request('addDomain', [
             'domain'           => $row['domain'],
             'nservers'         => arr::cjoin($row['nss'], "\n"),
             'admin_o'          => $row['registrant_remote_id'],
@@ -66,6 +66,8 @@ class DomainModule extends AbstractModule
         ], [
             'id' => 'taskid',
         ]);
+
+        return err::is($result) ? $result : array_merge($row, $result);
     }
 
     /**
@@ -97,7 +99,30 @@ class DomainModule extends AbstractModule
      * @param $row
      * @return array
      */
-    public function domainInfo($row): array
+    public function domainInfo ($row): array
+    {
+        return $this->domainGetInfo($row);
+    }
+
+    /**
+     * @param $rows
+     * @return array
+     */
+    public function domainsGetInfo ($rows): array
+    {
+        $res = [];
+        foreach ($rows as $row) {
+            $info = $this->domainGetInfo($row);
+            $res[$row['domain']] = err::is($info) ? null : $info;
+        };
+        return $res;
+    }
+
+    /**
+     * @param $row
+     * @return array
+     */
+    public function domainGetInfo($row): array
     {
         $res = $this->tool->request('getDomains', [
             'params'     => [
@@ -124,13 +149,15 @@ class DomainModule extends AbstractModule
 
     /**
      * @param $row
-     * @return mixed
+     * @return array
      */
     public function domainSetNSs($row): array
     {
         $row['nss'] = $this->_prepareNSs($row);
         $dd = $this->domainInfo($row);
-        if ($dd['nameservers'] == arr::cjoin($row['nss'])) return $row;
+        if ($dd['nameservers'] == arr::cjoin($row['nss'])) {
+            return $row;
+        }
         return $this->domainUpdate(array_merge($row, [
             'registrant' => $dd['registrant'],
         ]));
@@ -165,12 +192,14 @@ class DomainModule extends AbstractModule
 
     /**
      * @param $row
-     * @return array|mixed
+     * @return array
      */
     public function domainUpdate($row): array
     {
         $row = $this->_domainPrepareData($row);
-        if (err::is($row)) return $row;
+        if (err::is($row)) {
+            return $row;
+        }
         return $this->tool->request('updateDomain', [
             'domain'           => $row['domain'],
             'nservers'         => arr::cjoin($row['nss'], "\n"),
@@ -209,4 +238,63 @@ class DomainModule extends AbstractModule
         }
         return $row;
     }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainRenew(array $row): array
+    {
+        return $this->tool->request('prolongDomain', [
+            'domain' => $row['domain'],
+            'years'  => $row['period'],
+        ]);
+    }
+
+    /**
+     * @param array $jrow
+     * @return array
+     */
+    public function domainsLoadInfo (array $jrow): array
+    {
+        return $jrow;
+    }
+
+    /**
+     * @param array $row
+     * @return bool
+     */
+    public function domainSaveContacts (array $row): bool
+    {
+        return true;
+    }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainSetPassword (array $row): array
+    {
+        return $row;
+    }
+
+    /**
+     * @param $rows
+     * @return null
+     */
+    public function domainsEnableLock ($rows)
+    {
+        return error('unsupported for this zone');
+    }
+
+    /**
+     * @param $rows
+     * @return null
+     */
+    public function domainsDisableLock ($rows)
+    {
+        return error('unsupported for this zone');
+    }
+
+
 }
