@@ -3,6 +3,7 @@
 namespace hiapi\r01\modules;
 
 use arr;
+use err;
 use format;
 
 class DomainModule extends AbstractModule
@@ -96,7 +97,7 @@ class DomainModule extends AbstractModule
      * @param $row
      * @return array
      */
-    public function domainInfo($row)
+    public function domainInfo($row): array
     {
         $res = $this->tool->request('getDomains', [
             'params'     => [
@@ -121,4 +122,91 @@ class DomainModule extends AbstractModule
         ];
     }
 
+    /**
+     * @param $row
+     * @return mixed
+     */
+    public function domainSetNSs($row): array
+    {
+        $row['nss'] = $this->_prepareNSs($row);
+        $dd = $this->domainInfo($row);
+        if ($dd['nameservers'] == arr::cjoin($row['nss'])) return $row;
+        return $this->domainUpdate(array_merge($row, [
+            'registrant' => $dd['registrant'],
+        ]));
+    }
+
+    /**
+     * @param $row
+     * @return array
+     */
+    public function _prepareNSs($row): array
+    {
+        $domain = $row['domain'];
+        foreach (arr::csplit($row['nss']) as $host) {
+            if (substr($host, -strlen($domain)) == $domain) {
+                $my_nss[$host] = $host;
+            } else {
+                $nss[$host] = $host;
+            }
+        };
+        $nss = [];
+        if (isset($my_nss)) {
+            $his = $this->base->hostsGetInfo(arr::make_sub($my_nss, 'host'));
+            if (err::is($his)) {
+                return $his;
+            }
+            foreach ($his as $k => $v) {
+                $nss[$v['host']] = "$v[host] $v[ip]";
+            }
+        };
+        return $nss;
+    }
+
+    /**
+     * @param $row
+     * @return array|mixed
+     */
+    public function domainUpdate($row): array
+    {
+        $row = $this->_domainPrepareData($row);
+        if (err::is($row)) return $row;
+        return $this->tool->request('updateDomain', [
+            'domain'           => $row['domain'],
+            'nservers'         => arr::cjoin($row['nss'], "\n"),
+            'admin_o'          => $row['registrant'],
+            'descr'            => '',
+            'need_replace'     => 1,
+            'hide_name_nichdl' => $row['whois_protected'],
+            'hide_email'       => $row['whois_protected'],
+            'spam_process'     => 1,
+            'hide_phone_email' => $row['whois_protected'],
+            'dont_test_ns'     => 1,
+        ]);
+    }
+
+    /**
+     * @param $row
+     * @return mixed
+     */
+    public function _domainPrepareData($row): array
+    {
+        $cinfo = $this->base->domainGetContactsInfo(arr::mget($row, 'domain,id'));
+        if (err::is($cinfo)) {
+            return $cinfo;
+        }
+        $dataSet = arr::has($row, 'whois_protected') ? $row : $cinfo;
+        $row['whois_protected'] = arr::get($dataSet, 'whois_protected') ? 1 : 0;
+        $epp_id = $row['registrant'];
+        if (!$epp_id || !$this->tool->contactExists(compact('epp_id'))) {
+            $contact = $this->tool->contactSet(arr::get($cinfo, 'registrant'));
+            if (err::is($contact)) {
+                return $contact;
+            }
+            $row['registrant'] = $contact['id'];
+        } else {
+            $row['registrant'] = $this->nic_hdl($epp_id);
+        }
+        return $row;
+    }
 }

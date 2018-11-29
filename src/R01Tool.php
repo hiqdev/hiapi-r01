@@ -109,7 +109,7 @@ class R01Tool
     {
         $response = $this->getClient()->request($command, $input);
 
-        if (!$returns) {
+        if (empty($returns)) {
             return $response;
         }
 

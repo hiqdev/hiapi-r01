@@ -12,10 +12,10 @@
 | domainCheck | ✓ |  |
 | domainsCheck | ✓ |  |
 | domainRegister | ✓ |  |
-| domainUpdate |  |  |
-| domainSetNSs |  |  |
+| domainUpdate | ✓ |  |
+| domainSetNSs | ✓ |  |
 | domainRenew |  |  |
-| domainInfo |  |  |
+| domainInfo | ✓ |  |
 | domainsGetInfo |  |  |
 | domainsLoadInfo |  |  |
 | domainSaveContacts |  |  |
@@ -28,20 +28,20 @@
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| contactCreatePerson |  |  |
-| contactUpdatePerson |  |  |
-| contactCreateOrg |  |  |
+| contactCreatePerson | ✓ |  |
+| contactUpdatePerson | ✓ |  |
+| contactCreateOrg | ✓ |  |
 | contactExists | ✓ |  |
 | contactSet | ✓ |  |
 | contactCreate | ✓ |  |
 | contactUpdate | ✓ |  |
-| contactSave |  |  |
+| contactSave | ✓ |  |
 
 
 **Host Module**
 
 | Method | Implementation | Test |
 |---|:---:|---|
-| hostCreate |  |  |
-| hostsDelete |  |  |
-| hostSet |  |  |
+| hostCreate | ✓ |  |
+| hostsDelete | ✓ |  |
+| hostSet | ✓ |  |
