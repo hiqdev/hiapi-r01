@@ -14,6 +14,7 @@ use hiapi\r01\exceptions\InvalidCallException;
 use hiapi\r01\modules\AbstractModule;
 use hiapi\r01\modules\ContactModule;
 use hiapi\r01\modules\DomainModule;
+use hiapi\r01\modules\PollModule;
 
 class R01Tool
 {
@@ -32,6 +33,8 @@ class R01Tool
         'contacts'  => ContactModule::class,
         'host'      => HostModule::class,
         'hosts'     => HostModule::class,
+        'poll'      => PollModule::class,
+        'polls'     => PollModule::class,
     ];
 
     public function __construct($base, $data)
