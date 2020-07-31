@@ -264,9 +264,9 @@ class DomainModule extends AbstractModule
      * @param array $row
      * @return bool
      */
-    public function domainSaveContacts (array $row): bool
+    public function domainSaveContacts (array $row): array
     {
-        return true;
+        return $row;
     }
 
     /**
