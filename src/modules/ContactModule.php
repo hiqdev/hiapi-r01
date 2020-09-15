@@ -108,7 +108,7 @@ class ContactModule extends AbstractModule
             'id' => 'nic_hdl',
         ]);
 
-        return err::is($result) ? $result : array_merge($row, $result);
+        return array_merge($result, $row);
     }
 
     /**
@@ -158,7 +158,7 @@ class ContactModule extends AbstractModule
             'id' => 'nic_hdl',
         ]);
 
-        return err::is($result) ? $result : array_merge($row, $result);
+        return array_merge($result, $row);;
     }
 
 }

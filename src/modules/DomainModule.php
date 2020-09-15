@@ -2,9 +2,7 @@
 
 namespace hiapi\r01\modules;
 
-use arr;
-use err;
-use format;
+use Exception;
 
 class DomainModule extends AbstractModule
 {
@@ -12,12 +10,12 @@ class DomainModule extends AbstractModule
      * @param string $domain
      * @return array
      */
-    private function domainCheck(string $domain): array
+    private function domainCheck(array $row): array
     {
         return $this->tool->request('checkDomainAvailable', [
-            'domain_name' => $domain,
+            'domain_name' => $row['domain'],
         ], [
-            'available' => 'available',
+            'avail' => 'available',
         ]);
     }
 
@@ -29,7 +27,9 @@ class DomainModule extends AbstractModule
     {
         $result = [];
         foreach ($row['domains'] as $domain) {
-            $result[$domain] = $this->domainCheck($domain)['available'];
+            $result = $this->domainCheck([
+                'domain' => $domain,
+            ]);
         }
 
         return $result;
@@ -41,17 +41,11 @@ class DomainModule extends AbstractModule
      */
     public function domainRegister(array $row): array
     {
-        if (!$row['nss']) {
-            $row['nss'] = $this->base->domainGetNSs($row)['nss'] ?? null;
-        }
-        if (!$row['nss']) {
-            $row['nss'] = $this->tool->getDefaultNss();
-        }
-        $row = $this->domainPrepareContacts($row);
+        $row = $this->domainPrepareDataForCreate($row);
 
         $result = $this->tool->request('addDomain', [
             'domain'           => $row['domain'],
-            'nservers'         => arr::cjoin($row['nss'], "\n"),
+            'nservers'         => implode("\n", $row['nss']),
             'admin_o'          => $row['registrant_remote_id'],
             'descr'            => '',
             'check_whois'      => 0,
@@ -67,7 +61,75 @@ class DomainModule extends AbstractModule
             'id' => 'taskid',
         ]);
 
-        return err::is($result) ? $result : array_merge($row, $result);
+        return array_merge($row, $result);
+    }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainInfo ($row): array
+    {
+        return $this->domainGetInfo($row);
+    }
+
+    /**
+     * @param array $rows
+     * @return array
+     */
+    public function domainsGetInfo ($rows): array
+    {
+        $res = [];
+        foreach ($rows as $row) {
+            $res[$row['domain']] = $this->tool->domainInfo($row);
+        }
+
+        return $res;
+    }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainGetInfo($row): array
+    {
+        $res = $this->tool->request('getDomains', [
+            'params'     => [
+                'domain' => $row['domain'],
+            ],
+            'strict'     => 1,
+            'sort_field' => 'domain',
+            'sort_dir'   => 'asc',
+            'limit'      => 10,
+            'page'       => 1,
+        ]);
+
+        $dd = $res['data']['domainarray'][0];
+        foreach (explode("\n", $dd['nserver']) as $ns) {
+            $nss[] = explode(' ', $ns)[0];
+            [$ns, $ips] = explode(' ', $ns, 2);
+            $nss[$ns] = $ns;
+        }
+
+        return [
+            'domain'          => strtolower($dd['name']),
+            'nameservers'     => implplode(",", $nss),
+            'registrant'      => $dd['admin-o'],
+            'created_date'    => date("Y-m-d H:i:s", strtotime($dd['created'])),
+            'expiration_date' => date("Y-m-d H:i:s", strtotime($dd['reg-till'])),
+        ];
+    }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainRenew(array $row): array
+    {
+        return $this->tool->request('prolongDomain', [
+            'domain' => $row['domain'],
+            'years'  => $row['period'],
+        ]);
     }
 
     /**
@@ -95,57 +157,6 @@ class DomainModule extends AbstractModule
         return $row;
     }
 
-    /**
-     * @param $row
-     * @return array
-     */
-    public function domainInfo ($row): array
-    {
-        return $this->domainGetInfo($row);
-    }
-
-    /**
-     * @param $rows
-     * @return array
-     */
-    public function domainsGetInfo ($rows): array
-    {
-        $res = [];
-        foreach ($rows as $row) {
-            $info = $this->domainGetInfo($row);
-            $res[$row['domain']] = err::is($info) ? null : $info;
-        };
-        return $res;
-    }
-
-    /**
-     * @param $row
-     * @return array
-     */
-    public function domainGetInfo($row): array
-    {
-        $res = $this->tool->request('getDomains', [
-            'params'     => [
-                'domain' => $row['domain'],
-            ],
-            'strict'     => 1,
-            'sort_field' => 'domain',
-            'sort_dir'   => 'asc',
-            'limit'      => 10,
-            'page'       => 1,
-        ]);
-        $dd = $res['data']['domainarray'][0];
-        foreach (arr::csplit($dd->nserver, "\n") as $ns) {
-            $nss[] = explode(' ', $ns)[0];
-        }
-        return [
-            'domain'          => strtolower($dd['name']),
-            'nameservers'     => arr::cjoin($nss),
-            'registrant'      => $dd->{'admin-o'},
-            'created_date'    => format::datetime($dd['created'], 'iso'),
-            'expiration_date' => format::date($dd['reg-till'], 'iso'),
-        ];
-    }
 
     /**
      * @param $row
@@ -154,10 +165,11 @@ class DomainModule extends AbstractModule
     public function domainSetNSs($row): array
     {
         $row['nss'] = $this->_prepareNSs($row);
-        $dd = $this->domainInfo($row);
-        if ($dd['nameservers'] == arr::cjoin($row['nss'])) {
+        $dd = $this->tool->domainInfo($row);
+        if ($dd['nameservers'] == implode("\n", $row['nss'])) {
             return $row;
         }
+
         return $this->domainUpdate(array_merge($row, [
             'registrant' => $dd['registrant'],
         ]));
@@ -167,42 +179,13 @@ class DomainModule extends AbstractModule
      * @param $row
      * @return array
      */
-    public function _prepareNSs($row): array
-    {
-        $domain = $row['domain'];
-        foreach (arr::csplit($row['nss']) as $host) {
-            if (substr($host, -strlen($domain)) == $domain) {
-                $my_nss[$host] = $host;
-            } else {
-                $nss[$host] = $host;
-            }
-        };
-        $nss = [];
-        if (isset($my_nss)) {
-            $his = $this->base->hostsGetInfo(arr::make_sub($my_nss, 'host'));
-            if (err::is($his)) {
-                return $his;
-            }
-            foreach ($his as $k => $v) {
-                $nss[$v['host']] = "$v[host] $v[ip]";
-            }
-        };
-        return $nss;
-    }
-
-    /**
-     * @param $row
-     * @return array
-     */
     public function domainUpdate($row): array
     {
-        $row = $this->_domainPrepareData($row);
-        if (err::is($row)) {
-            return $row;
-        }
+        $row = $this->domainPrepareDataForUpdate($row);
+
         return $this->tool->request('updateDomain', [
             'domain'           => $row['domain'],
-            'nservers'         => arr::cjoin($row['nss'], "\n"),
+            'nservers'         => implode("\n", $row['nss']),
             'admin_o'          => $row['registrant'],
             'descr'            => '',
             'need_replace'     => 1,
@@ -211,43 +194,6 @@ class DomainModule extends AbstractModule
             'spam_process'     => 1,
             'hide_phone_email' => $row['whois_protected'],
             'dont_test_ns'     => 1,
-        ]);
-    }
-
-    /**
-     * @param $row
-     * @return mixed
-     */
-    public function _domainPrepareData($row): array
-    {
-        $cinfo = $this->base->domainGetContactsInfo(arr::mget($row, 'domain,id'));
-        if (err::is($cinfo)) {
-            return $cinfo;
-        }
-        $dataSet = arr::has($row, 'whois_protected') ? $row : $cinfo;
-        $row['whois_protected'] = arr::get($dataSet, 'whois_protected') ? 1 : 0;
-        $epp_id = $row['registrant'];
-        if (!$epp_id || !$this->tool->contactExists(compact('epp_id'))) {
-            $contact = $this->tool->contactSet(arr::get($cinfo, 'registrant'));
-            if (err::is($contact)) {
-                return $contact;
-            }
-            $row['registrant'] = $contact['id'];
-        } else {
-            $row['registrant'] = $this->nic_hdl($epp_id);
-        }
-        return $row;
-    }
-
-    /**
-     * @param array $row
-     * @return array
-     */
-    public function domainRenew(array $row): array
-    {
-        return $this->tool->request('prolongDomain', [
-            'domain' => $row['domain'],
-            'years'  => $row['period'],
         ]);
     }
 
@@ -261,8 +207,17 @@ class DomainModule extends AbstractModule
     }
 
     /**
+     * @param array $rows
+     * @return array
+     */
+    public function domainsSaveContacts(array $rows)
+    {
+        return $rows;
+    }
+
+    /**
      * @param array $row
-     * @return bool
+     * @return array
      */
     public function domainSaveContacts (array $row): array
     {
@@ -281,20 +236,91 @@ class DomainModule extends AbstractModule
     /**
      * @param $rows
      * @return null
+     * @thow new Exception
      */
     public function domainsEnableLock ($rows)
     {
-        return error('unsupported for this zone');
+        throw new Exception('unsupported for this zone');
     }
 
     /**
      * @param $rows
      * @return null
+     * @thow new Exception
      */
     public function domainsDisableLock ($rows)
     {
-        return error('unsupported for this zone');
+        throw new Exception('unsupported for this zone');
     }
 
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainPrepareDataForUpdate(array $row) : array
+    {
+        $info = $this->tool->domainInfo($row);
+        $row['registrant'] = $info['registrant'];
+        $row['whois_protected'] = $row['whois_protected'] ? 1 : 0;
+        $row['nss'] = $this->domainPrepareNSs($row);
 
+        return $row;
+    }
+
+    /**
+     * @param array $row
+     * @return array
+     */
+    public function domainPrepareDataForCreate(array $row) : array
+    {
+        if (!$row['nss']) {
+            $row['nss'] = $this->base->domainGetNSs($row)['nss'] ?? null;
+        }
+
+        if (!$row['nss']) {
+            $row['nss'] = $this->tool->getDefaultNss();
+        }
+
+        foreach ($this->tool->getContactTypes() as $type) {
+            $contactId = $contacts["{$type}_info"]['id'];
+            $remoteId = $remoteIds[$contactId];
+            if (!$remoteId) {
+                $response = $this->tool->contactSet($row["{$type}_info"]);
+                $remoteId = $response['epp_id'];
+                $remoteIds[$contactId] = $remoteId;
+            }
+            $row[$type . '_remote_id'] = $remoteId;
+        }
+
+        $row['nss'] = $this->domainPrepareNSs($row);
+        $row['whois_protected'] = $row['whois_protected'] ? 1 : 0;
+
+        return $row;
+    }
+
+    /**
+     * @param $row
+     * @return array
+     */
+    public function domainPrepareNSs($row): array
+    {
+        $domain = $row['domain'];
+        foreach (explode(",", $row['nss']) as $host) {
+            if (substr($host, -strlen($domain)) == $domain) {
+                $my_nss[$host] = $host;
+            } else {
+                $nss[$host] = $host;
+            }
+        }
+
+        $nss = [];
+        if (isset($my_nss)) {
+            foreach ($my_nss as $k => $v) {
+                $data = $this->base->hostGetInfo(['host' => $v]);
+                $nss[$v] = "$data[host] $data[ip]";
+            }
+        }
+
+        return $nss;
+    }
 }

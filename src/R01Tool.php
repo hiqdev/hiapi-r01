@@ -110,7 +110,13 @@ class R01Tool
      */
     public function request(string $command, array $input, array $returns = []): array
     {
-        $response = $this->getClient()->request($command, $input);
+        try {
+            $response = $this->getClient()->request($command, $input);
+        } catch (\Throwable $e) {
+            return array_merge($input, [
+                '_error' => $e->getMessage(),
+            ]);
+        }
 
         if (empty($returns)) {
             return $response;
@@ -128,5 +134,10 @@ class R01Tool
     public function getBase()
     {
         return $this->base;
+    }
+
+    public function getContactTypes() : array
+    {
+        return ['registrant'];
     }
 }
