@@ -105,6 +105,11 @@ class DomainModule extends AbstractModule
         ]);
 
         $dd = $res['data']['domainarray'][0];
+
+        if (empty($dd['name'])) {
+            throw new Exception('Object does not exist');
+        }
+
         foreach (explode("\n", $dd['nserver']) as $ns) {
             $nss[] = explode(' ', $ns)[0];
             [$ns, $ips] = explode(' ', $ns, 2);
